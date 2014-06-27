@@ -18,15 +18,17 @@
 ;; subforms.
 
 (defn simplify-one [expr rules]
-  (let [alts (logic/run* [q]
+  (let [wrapped-expr (util/wrap-struct-walker expr)
+        alts (logic/run* [q]
                (logic/fresh [pat subst]
                  (logic/membero [pat subst] rules)
                  (logic/project [pat subst]
-                   (logic/all (pat expr)
+                   (logic/all (pat wrapped-expr)
                               (subst q)))))]
+    
     (if (empty? alts) 
       expr
-      (util/unwrap-vector-walker (first alts)))))
+      (util/unwrap-struct-walker (first alts)))))
 
 ;; Simplifies expr according to the rules until no more rules apply.
 (defn simplify [expr rules]

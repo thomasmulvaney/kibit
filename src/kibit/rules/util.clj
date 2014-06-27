@@ -2,27 +2,40 @@
   (:require [clojure.core.logic :as logic]
             [clojure.walk :as walk]))
 
-;; wrap vectors in an s-expression of form (:kibit.rules/vector ...)
-(def wrap-vector-walker 
+;; wrap vectors and maps in an s-expression of form (:kibit.rules/vector ...) and
+;; (:kibit.rules/map ...)
+(def wrap-struct-walker 
   (partial walk/prewalk
-           #(if (vector? %)
-              (concat `(:kibit.rules/vector) %)
-              %)))
+           #(cond
+             (vector? %)
+             (concat `(:kibit.rules/vector) %)
+             
+             (map? %)
+             (concat `(:kibit.rules/map) (mapcat identity %))
+             
+             :else %)))
 
 (defn kibit-vector? [exp]
   (and (sequential? exp) (= :kibit.rules/vector (first exp))))
 
-;; If we catch an exp in the form (:kibit.rules/vector foo bar & baz) we return 
-;; the converted back into a normal vector 
-(def unwrap-vector-walker
-  (partial walk/prewalk
-           (fn [exp]
-             (if (kibit-vector? exp)
-               (apply vector (rest exp))
-               exp))))
+(defn kibit-map? [exp]
+  (and (sequential? exp) (= :kibit.rules/map (first exp))))
 
-(defn compile-rule [[pattern simplification]]
-  (let [rule [pattern (wrap-vector-walker simplification)]
+;; If we catch an exp in the form (:kibit.rules/vector ...) or (:kibit.rules/map ...)
+;; we return the form converted back into its normal structure 
+(def unwrap-struct-walker
+  (partial walk/prewalk
+           #(cond
+            (kibit-vector? %)
+            (apply vector (rest %))
+
+            (kibit-map? %)
+            (apply hash-map (rest %))
+            
+            :else %)))
+
+(defn compile-rule [[pattern simpl]]
+  (let [rule [(wrap-struct-walker pattern) (wrap-struct-walker simpl)]
         [pat alt] (logic/prep rule)]
      [(fn [expr] (logic/== expr pat))
       (fn [sbst] (logic/== sbst alt))]))

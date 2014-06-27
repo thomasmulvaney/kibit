@@ -33,7 +33,19 @@
   [(first (next ?coll))  (fnext ?coll)]
   [(next (next ?coll))   (nnext ?coll)]
   [(next (first ?coll))  (nfirst ?coll)]
+  [(fn [?x] (?fun ?x)) ?fun]
+  [(fn* [?x] (?fun ?x)) ?fun]
+  
+  ;; Unneeded and/or
+  [(and ?x) ?x]
+  [(or ?x) ?x]
 
+  ;; Unneeded thread-macros
+  [(->> ?arg (?first-of-form ?rest-of-form)) (?first-of-form ?rest-of-form ?arg)] 
+  [(->  ?arg (?first-of-form ?rest-of-form)) (?first-of-form ?arg ?rest-of-form)] 
+  [(->> ?arg ?form) (?form ?arg)]
+  [(-> ?arg ?form) (?form ?arg)]
+  
   ;; Unneeded anonymous functions
   (let [fun (logic/lvar)
         args (logic/lvar)]
@@ -49,7 +61,6 @@
 
   ;; Java stuff
   [(.toString ?x) (str ?x)]
-  
   (let [obj (logic/lvar)
         method (logic/lvar)
         args (logic/lvar)]
@@ -124,7 +135,6 @@
   (map (fn [m] (:key m)) [some maps])
   (map (fn [m] (:key m alt)) [a b c])
 
-  (. obj toString)
   (. obj toString a b c)
 
   (. Thread (sleep (read-string "2000")))
@@ -136,6 +146,4 @@
 
   (->> x f) ;; (f x)
   (->> x (f a b)) ;; (f a b x)
-  (->> x (f)) ;; (f x)
-  
-  )
+)
