@@ -1,6 +1,5 @@
 (ns kibit.driver
-  (:require [clojure.tools.namespace :refer [find-clojure-sources-in-dir]]
-            [clojure.java.io :as io]
+  (:require [clojure.java.io :as io]
             [kibit.check :refer [check-file]]
             [kibit.reporters :refer :all]
             [clojure.tools.cli :refer [cli]]))
@@ -8,6 +7,17 @@
 (def cli-specs [["-r" "--reporter"
                  "The reporter used when rendering suggestions"
                  :default "text"]])
+
+;; Thanks @clinton
+(defn find-clojure-sources-in-dir [dir]
+  (letfn [(clojure-source-file? [file]
+            (and (.isFile file)
+                 (let [name (.getName file)]
+                   (or (.endsWith name ".clj")
+                       (.endsWith name ".cljs")))))]
+
+    (sort-by #(.getAbsolutePath %)
+             (filter clojure-source-file? (file-seq dir)))))
 
 (defn run [source-paths & args]
   (let [[options file-args usage-text] (apply (partial cli args) cli-specs)
